@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet restore Hookline.slnx
+      - name: check formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: dotnet format Hookline.slnx --verify-no-changes --no-restore
+      - run: dotnet build Hookline.slnx --configuration Release --no-restore
+      - name: test everything, with PostgreSQL in Docker
+        if: matrix.os == 'ubuntu-latest'
+        run: dotnet test --solution Hookline.slnx --configuration Release --no-build
+      # GitHub's macOS and Windows runners can't run Linux containers, so they run the core tests only.
+      - name: test the core
+        if: matrix.os != 'ubuntu-latest'
+        run: dotnet test --project tests/Hookline.Core.Tests --configuration Release --no-build

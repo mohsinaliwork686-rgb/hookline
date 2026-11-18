@@ -1,5 +1,9 @@
 # hookline
 
+[![ci](https://github.com/mohsinaliwork686-rgb/hookline/actions/workflows/ci.yml/badge.svg)](https://github.com/mohsinaliwork686-rgb/hookline/actions/workflows/ci.yml)
+[![MIT licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4.svg)
+
 Delivers webhooks reliably, even when the receiver is down. An app posts its events to hookline,
 which stores each one first, then delivers it to every subscriber: signed, retried with backoff, and
 set aside for a person to look at after the last attempt. A dashboard shows every delivery and why it
