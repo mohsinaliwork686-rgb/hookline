@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Hookline.Api/Hookline.Api.csproj" />
+    <Project Path="src/Hookline.Core/Hookline.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Hookline.Api.Tests/Hookline.Api.Tests.csproj" />
+    <Project Path="tests/Hookline.Core.Tests/Hookline.Core.Tests.csproj" />
+  </Folder>
+</Solution>
