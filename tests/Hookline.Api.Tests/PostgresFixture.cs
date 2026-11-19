@@ -77,6 +77,9 @@ public sealed class HooklineApp(string connectionString, FakeTimeProvider clock,
         builder.UseSetting("ConnectionStrings:Hookline", connectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.UseSetting("Hookline:ApiKey", ApiKey);
+
+        // Tests drive the worker a pass at a time. The background loop would race them on the fake clock.
+        builder.UseSetting("Delivery:Enabled", "false");
         builder.ConfigureTestServices(s =>
         {
             s.AddSingleton<TimeProvider>(clock);

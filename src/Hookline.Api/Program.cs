@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 using Hookline.Api.Data;
 using Hookline.Api.Ingest;
+using Hookline.Api.Worker;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -19,6 +20,7 @@ builder.Services.AddDbContext<HooklineDbContext>((services, options) => options
     .AddInterceptors(services.GetServices<IInterceptor>()));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ApiKeyFilter>();
+builder.Services.AddDeliveryWorker(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(json => json.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
