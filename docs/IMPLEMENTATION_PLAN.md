@@ -35,6 +35,9 @@ retries and concurrency, run rather than read about.
 - **No secret rotation with overlapping secrets.** A subscription has one secret; replacing it is a
   new subscription. The signature format leaves room for it (several signatures in one header).
 - **No live hosted demo.** The demo is `docker compose up`, with a receiver that fails on purpose.
+- **No filtering of internal addresses.** Whoever holds the API key can point a subscription at any
+  URL, including ones only hookline's network can reach. The demo receiver is one of those, on the
+  compose network. Run it where its network can't reach anything it shouldn't.
 
 ## 3. What it does
 
@@ -116,7 +119,8 @@ Stripe, Svix and Standard Webhooks all retry every non-`2xx`. So:
 - `3xx`: a failure. Redirects aren't followed, because a signed request shouldn't be forwarded
   somewhere the subscriber didn't register.
 - `410 Gone`: the receiver says this URL is gone. The delivery is dead at once and the subscription is
-  disabled, so no more deliveries are created for it.
+  disabled, so no more deliveries are created for it. Its other waiting deliveries end too, without
+  being sent, and so does any delivery a worker takes for a subscription that was disabled meanwhile.
 - `429` and `503` with a `Retry-After` header: the next attempt waits at least that long (capped at
   the schedule's longest wait), so hookline doesn't hammer a receiver asking it to slow down.
 - Everything else, including timeouts, refused connections, DNS failures and other `4xx` and `5xx`:
@@ -174,7 +178,8 @@ worker signs and sends each delivery, in parallel up to a limit, with the 15-sec
 
 **Recording.** In another short transaction, the worker writes the attempt and moves the delivery on:
 delivered, scheduled for the next attempt, or dead. It updates the delivery only if the lease id is
-still its own, so a worker that was too slow and lost its lease can't overwrite a newer result.
+still its own, so a worker that was too slow and lost its lease can't overwrite a newer result. That
+worker writes nothing at all, not even its attempt, so the log can miss a request the receiver did get.
 
 **Nothing is lost.** If a worker dies after taking a delivery, the lease simply runs out and another
 worker takes it. The receiver may then see the event twice, which is exactly what at least once means
