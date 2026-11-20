@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Hookline.Api/Hookline.Api.csproj" />
     <Project Path="src/Hookline.Core/Hookline.Core.csproj" />
+    <Project Path="src/Hookline.DemoReceiver/Hookline.DemoReceiver.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Hookline.Api.Tests/Hookline.Api.Tests.csproj" />

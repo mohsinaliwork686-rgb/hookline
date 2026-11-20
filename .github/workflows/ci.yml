@@ -33,3 +33,6 @@ jobs:
       - name: test the core
         if: matrix.os != 'ubuntu-latest'
         run: dotnet test --project tests/Hookline.Core.Tests --configuration Release --no-build
+      - name: build the demo images
+        if: matrix.os == 'ubuntu-latest'
+        run: docker compose build

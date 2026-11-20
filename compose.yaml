@@ -1,0 +1,55 @@
+# The demo: PostgreSQL, hookline, and a receiver that misbehaves on purpose. It also plays the sending app:
+# it subscribes five paths and posts a dozen events. Open http://localhost:5080 and sign in with "demo".
+# Start again from nothing with: docker compose down --volumes
+
+name: hookline
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: hookline
+      POSTGRES_PASSWORD: hookline
+      POSTGRES_DB: hookline
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hookline -d hookline"]
+      interval: 2s
+      retries: 30
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  hookline:
+    build:
+      context: .
+      target: hookline
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Hookline: "Host=postgres;Database=hookline;Username=hookline;Password=hookline"
+      Database__MigrateOnStartup: "true"
+      Hookline__ApiKey: demo-api-key
+      Hookline__AdminPassword: demo
+      # A short schedule and timeout, so the whole story plays out in about a minute and a half.
+      Delivery__Timeout: "00:00:05"
+      Delivery__Schedule__0: "00:00:00"
+      Delivery__Schedule__1: "00:00:03"
+      Delivery__Schedule__2: "00:00:06"
+      Delivery__Schedule__3: "00:00:12"
+      Delivery__Schedule__4: "00:00:20"
+    ports:
+      - "5080:8080"
+
+  demo:
+    build:
+      context: .
+      target: demo
+    depends_on:
+      - hookline
+    environment:
+      Demo__HooklineUrl: http://hookline:8080
+      Demo__ApiKey: demo-api-key
+      Demo__ReceiverUrl: http://demo:8080
+
+volumes:
+  postgres:
