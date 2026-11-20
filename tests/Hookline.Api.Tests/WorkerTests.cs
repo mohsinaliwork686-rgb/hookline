@@ -430,13 +430,49 @@ public sealed class WorkerTests(PostgresFixture postgres) : IAsyncLifetime
         await SubscribeAsync("/ok");
         await SendEventAsync();
 
-        // Between passes the worker rests on the app's clock, so moving the clock on wakes it.
+        // When nothing is due the worker rests on the app's clock, so moving the clock on wakes it.
         await WaitUntilAsync(async () =>
         {
             _clock.Advance(TimeSpan.FromSeconds(1));
             return (await OnlyDeliveryAsync()).Status == DeliveryStatus.Delivered;
         });
         Assert.Single(_receiver.Requests);
+    }
+
+    [Fact]
+    public async Task The_background_worker_keeps_sending_while_one_receiver_hangs()
+    {
+        await StartAsync(o => o.Enabled = true);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _receiver.Hold("/slow", release.Task);
+        _receiver.Answer("/ok", 200);
+        var slow = await SubscribeAsync("/slow", "order.paid");
+        var ok = await SubscribeAsync("/ok", "order.refunded");
+
+        try
+        {
+            await SendEventAsync(type: "order.paid");
+            await WaitUntilAsync(() =>
+            {
+                _clock.Advance(TimeSpan.FromSeconds(1));
+                return Task.FromResult(_receiver.To("/slow").Count == 1);
+            });
+
+            // This one comes due while the slow request is still open, and goes out without waiting for it.
+            await SendEventAsync(type: "order.refunded");
+            await WaitUntilAsync(async () =>
+            {
+                _clock.Advance(TimeSpan.FromSeconds(1));
+                return await StatusAsync(ok.Id) == DeliveryStatus.Delivered;
+            });
+            Assert.Equal(DeliveryStatus.Pending, await StatusAsync(slow.Id));
+        }
+        finally
+        {
+            release.SetResult();
+        }
+
+        await WaitUntilAsync(async () => await StatusAsync(slow.Id) == DeliveryStatus.Delivered);
     }
 
     [Fact]
