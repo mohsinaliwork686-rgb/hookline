@@ -9,10 +9,16 @@ using Hookline.Api.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
+using Npgsql;
+
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Hookline")
-    ?? throw new InvalidOperationException("Set ConnectionStrings:Hookline to a PostgreSQL connection string.");
+// GSS encryption is turned off: Npgsql would otherwise try Kerberos first, which the aspnet image doesn't have.
+var connectionString = new NpgsqlConnectionStringBuilder(builder.Configuration.GetConnectionString("Hookline")
+    ?? throw new InvalidOperationException("Set ConnectionStrings:Hookline to a PostgreSQL connection string."))
+{
+    GssEncryptionMode = GssEncryptionMode.Disable,
+}.ConnectionString;
 
 // Interceptors registered in the container are added to every context, which lets a test fail a save on purpose.
 builder.Services.AddDbContext<HooklineDbContext>((services, options) => options
