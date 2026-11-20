@@ -9,8 +9,8 @@
     <a href="/?status=@row.Status.ToString().ToLowerInvariant()">@row.Status</a>
 }
 
-<h1><code>@row.EventType</code> to <code>@row.Url</code></h1>
-<p class="lede"><span class="badge @row.Status">@row.Status</span> · @Display.When(row, Model.Now)</p>
+<h1><code>@row.EventType</code></h1>
+<p class="lede">To <code>@row.Url</code> · <span class="badge @row.Status">@row.Status</span> · @Display.When(row, Model.Now)</p>
 
 @if (Model.Message is not null)
 {

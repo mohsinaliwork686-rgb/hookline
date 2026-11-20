@@ -54,11 +54,11 @@ else
                 @foreach (var row in Model.Rows)
                 {
                     <tr>
-                        <td><a href="/deliveries/@row.Id"><code>@row.EventType</code></a><div class="muted"><code>@row.EventId</code></div></td>
+                        <td><a href="/deliveries/@row.Id"><code>@row.EventType</code></a><div><code class="id">@row.EventId</code></div></td>
                         <td><code>@row.Url</code></td>
                         <td><span class="badge @row.Status">@row.Status</span></td>
                         <td class="num">@row.Attempts</td>
-                        <td title="@Display.Time(row.CreatedAt)">@Display.When(row, Model.Now)</td>
+                        <td class="when" title="@Display.Time(row.CreatedAt) UTC">@Display.When(row, Model.Now)</td>
                         <td class="hide-narrow">@row.LastError</td>
                         <td>
                             @if (row.Status == DeliveryStatus.Dead)
