@@ -206,8 +206,10 @@ Microsoft.Testing.Platform, Testcontainers, `TimeProvider` for the clock.
 
 ## 8. The demo
 
-`docker compose up` starts PostgreSQL, hookline and the demo receiver, then a one-off container that
-creates four subscriptions and posts a stream of events:
+`docker compose up` starts PostgreSQL, hookline and the demo receiver. The receiver also plays the
+sending app: it creates a subscription for each path and posts a stream of events. (Changed on
+Friday from a separate one-off container: the receiver needs each subscription's secret to check
+signatures, and creating the subscriptions itself is the simplest way for it to have them.)
 
 | Receiver path | Behaviour | What it shows |
 |---------------|-----------|---------------|
@@ -257,10 +259,29 @@ dashboard. The receiver logs each request it gets and whether the signature chec
 
 ## 12. Definition of done
 
-- [ ] Public repo, description and topics
-- [ ] This plan, committed before the code
-- [ ] README: the problem first, a screenshot of the dashboard, how to run the demo, the guarantees and what it doesn't promise
-- [ ] Every row of the test plan covered
-- [ ] CI green: format, build with warnings as errors, the core tests, the API and worker tests against real PostgreSQL
-- [ ] The compose demo: delivered, retried, timed out, dead and sent again, and gone
-- [ ] At least 10 commits, one logical change each
+- [x] Public repo, description and topics
+- [x] This plan, committed before the code
+- [x] README: the problem first, a screenshot of the dashboard, how to run the demo, the guarantees and what it doesn't promise
+- [x] Every row of the test plan covered
+- [x] CI green: format, build with warnings as errors, the core tests, the API and worker tests against real PostgreSQL
+- [x] The compose demo: delivered, retried, timed out, dead and sent again, and gone
+- [x] At least 10 commits, one logical change each
+
+## 13. How it went
+
+- **Wednesday 18 November:** this plan and the research notes, then `Hookline.Core` (retry policy,
+  signing, checked against the reference library's fixed example), the data model and the ingest API
+  with idempotency, and CI on three operating systems.
+- **Thursday 19 November:** the delivery worker and its tests. The tests were checked by breaking the
+  worker on purpose; the first round showed that removing `SKIP LOCKED` went unnoticed, because the
+  several-workers test only checks the outcome, so a test now holds a row lock mid-claim and requires
+  the worker to skip it. Also found: a receiver answering with a NUL byte made the attempt impossible
+  to save in PostgreSQL, so the excerpt replaces it.
+- **Friday 20 November:** writing the demo showed that the background loop ran whole passes, so a
+  receiver that hung until the timeout held up every delivery that fell due meanwhile. It now keeps
+  requests in flight and takes new work as each one finishes, with a test that fails on the old loop.
+  Then the dashboard and Send again, the demo receiver and compose (where Npgsql's Kerberos probe
+  failed on the aspnet image, as it did in `rotadesk`), the screenshots and the README.
+
+Left for later: keeping the dashboard's sign-in keys in the database (a restart signs the admin out),
+a page of subscriptions with a way to enable one again, and paging past the newest 100 deliveries.
