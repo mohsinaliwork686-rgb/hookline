@@ -1,0 +1,78 @@
+@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = Model.Status?.ToString() ?? "Deliveries";
+    var filter = Model.Status?.ToString().ToLowerInvariant();
+}
+@section Nav {
+    <a href="/" class="@(Model.Status is null ? "on" : null)">All<span>@Model.Counts.Values.Sum()</span></a>
+    @foreach (var status in Enum.GetValues<DeliveryStatus>())
+    {
+        <a href="/?status=@status.ToString().ToLowerInvariant()" class="@(Model.Status == status ? "on" : null)">@status<span>@Model.Counts[status]</span></a>
+    }
+}
+
+<h1>@(Model.Status switch
+{
+    DeliveryStatus.Pending => "Waiting to be sent",
+    DeliveryStatus.Delivered => "Delivered",
+    DeliveryStatus.Dead => "Dead letters",
+    _ => "Deliveries",
+})</h1>
+<p class="lede">@(Model.Status switch
+{
+    DeliveryStatus.Pending => "Due now or waiting for their next attempt.",
+    DeliveryStatus.Dead => "Every attempt failed, or the receiver answered 410 Gone. Send one again once the receiver is fixed.",
+    _ => $"The newest {DashboardData.PageSize}, newest first. Times are UTC.",
+})</p>
+
+@if (Model.Message is not null)
+{
+    <p class="notice" role="status">@Model.Message</p>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <p class="muted">Nothing here yet.</p>
+}
+else
+{
+    <div class="wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Receiver</th>
+                    <th>Status</th>
+                    <th class="num">Attempts</th>
+                    <th>When</th>
+                    <th class="hide-narrow">Last error</th>
+                    <th><span class="hide-narrow">Action</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td><a href="/deliveries/@row.Id"><code>@row.EventType</code></a><div class="muted"><code>@row.EventId</code></div></td>
+                        <td><code>@row.Url</code></td>
+                        <td><span class="badge @row.Status">@row.Status</span></td>
+                        <td class="num">@row.Attempts</td>
+                        <td title="@Display.Time(row.CreatedAt)">@Display.When(row, Model.Now)</td>
+                        <td class="hide-narrow">@row.LastError</td>
+                        <td>
+                            @if (row.Status == DeliveryStatus.Dead)
+                            {
+                                <form method="post" asp-page-handler="SendAgain">
+                                    <input type="hidden" name="id" value="@row.Id">
+                                    <input type="hidden" name="status" value="@filter">
+                                    <button type="submit">Send again</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

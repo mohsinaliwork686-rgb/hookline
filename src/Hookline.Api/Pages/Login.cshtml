@@ -1,0 +1,29 @@
+@page "/login"
+@model LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+
+<div style="max-width: 360px; margin: 64px auto;">
+    <h1>hookline</h1>
+    @if (!Model.Enabled)
+    {
+        <p class="lede">The dashboard is off. Set <code>Hookline:AdminPassword</code> to turn it on.</p>
+    }
+    else
+    {
+        <p class="lede">Deliveries, attempts and dead letters.</p>
+        <form method="post">
+            <p>
+                <label for="password">Admin password</label><br>
+                <input id="password" name="Password" type="password" autocomplete="current-password" required autofocus
+                       style="width: 100%; padding: 7px 10px; font: inherit; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text);">
+            </p>
+            @if (Model.Error is not null)
+            {
+                <p class="error" role="alert">@Model.Error</p>
+            }
+            <button class="primary" type="submit">Sign in</button>
+        </form>
+    }
+</div>

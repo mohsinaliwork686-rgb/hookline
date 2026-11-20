@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Hookline.Api.Dashboard;
 using Hookline.Api.Data;
 using Hookline.Api.Ingest;
 using Hookline.Api.Worker;
@@ -21,6 +22,7 @@ builder.Services.AddDbContext<HooklineDbContext>((services, options) => options
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ApiKeyFilter>();
 builder.Services.AddDeliveryWorker(builder.Configuration);
+builder.Services.AddDashboard(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(json => json.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
@@ -34,12 +36,16 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 var api = app.MapGroup("/api").AddEndpointFilter<ApiKeyFilter>();
 api.MapSubscriptions();
 api.MapEvents();
+
+app.MapRazorPages();
 
 app.Run();
 

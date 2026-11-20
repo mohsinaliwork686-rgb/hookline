@@ -51,6 +51,8 @@ public sealed class HooklineApp(string connectionString, FakeTimeProvider clock,
 {
     public const string ApiKey = "test-key";
 
+    public const string AdminPassword = "test-admin";
+
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
@@ -77,6 +79,7 @@ public sealed class HooklineApp(string connectionString, FakeTimeProvider clock,
         builder.UseSetting("ConnectionStrings:Hookline", connectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.UseSetting("Hookline:ApiKey", ApiKey);
+        builder.UseSetting("Hookline:AdminPassword", AdminPassword);
 
         // Tests drive the worker a pass at a time. The background loop would race them on the fake clock.
         builder.UseSetting("Delivery:Enabled", "false");

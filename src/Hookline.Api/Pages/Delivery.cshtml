@@ -1,0 +1,114 @@
+@page "/deliveries/{id}"
+@model DeliveryModel
+@{
+    var row = Model.Detail.Delivery;
+    ViewData["Title"] = row.EventType;
+}
+@section Nav {
+    <a href="/">All</a>
+    <a href="/?status=@row.Status.ToString().ToLowerInvariant()">@row.Status</a>
+}
+
+<h1><code>@row.EventType</code> to <code>@row.Url</code></h1>
+<p class="lede"><span class="badge @row.Status">@row.Status</span> · @Display.When(row, Model.Now)</p>
+
+@if (Model.Message is not null)
+{
+    <p class="notice" role="status">@Model.Message</p>
+}
+
+<dl class="facts">
+    <dt>Delivery</dt>
+    <dd><code>@row.Id</code></dd>
+    <dt>Event</dt>
+    <dd><code>@row.EventId</code>, sent as <code>webhook-id</code> on every attempt</dd>
+    <dt>Receiver</dt>
+    <dd>
+        <code>@row.Url</code>
+        @if (!Model.Detail.SubscriptionEnabled)
+        {
+            <span class="error">· subscription disabled: @Model.Detail.DisabledReason</span>
+        }
+    </dd>
+    <dt>Attempts</dt>
+    <dd>@row.Attempts</dd>
+    <dt>Created</dt>
+    <dd>@Display.Time(row.CreatedAt) UTC</dd>
+    @if (row.Status == DeliveryStatus.Pending)
+    {
+        <dt>Next attempt</dt>
+        <dd>@Display.Time(row.NextAttemptAt) UTC (@Display.Relative(row.NextAttemptAt, Model.Now))</dd>
+    }
+    @if (row.DeliveredAt is { } deliveredAt)
+    {
+        <dt>Delivered</dt>
+        <dd>@Display.Time(deliveredAt) UTC</dd>
+    }
+    @if (row.LastError is not null)
+    {
+        <dt>Last error</dt>
+        <dd class="error">@row.LastError</dd>
+    }
+</dl>
+
+@if (row.Status == DeliveryStatus.Dead)
+{
+    @if (Model.Detail.SubscriptionEnabled)
+    {
+        <form method="post" asp-page-handler="SendAgain" asp-route-id="@row.Id">
+            <button class="primary" type="submit">Send again</button>
+            <span class="muted">One more attempt, now. If it fails, the delivery is dead again.</span>
+        </form>
+    }
+    else
+    {
+        <p class="muted">It can't be sent again while its subscription is disabled.</p>
+    }
+}
+
+<h2>Attempts</h2>
+@if (Model.Detail.Attempts.Count == 0)
+{
+    <p class="muted">None yet.</p>
+}
+else
+{
+    <div class="wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th class="num">#</th>
+                    <th>Started (UTC)</th>
+                    <th class="num">Took</th>
+                    <th>Answer</th>
+                    <th>Start of the response</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var attempt in Model.Detail.Attempts)
+                {
+                    <tr>
+                        <td class="num">@attempt.Number</td>
+                        <td>@Display.Time(attempt.StartedAt)</td>
+                        <td class="num">@attempt.DurationMs ms</td>
+                        <td>
+                            @if (attempt.StatusCode is { } code)
+                            {
+                                <span class="@(code is >= 200 and <= 299 ? "code-ok" : "code-bad")">@code</span>
+                            }
+                            else
+                            {
+                                <span class="error">@attempt.Error</span>
+                            }
+                        </td>
+                        <td><code>@attempt.ResponseExcerpt</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h2>Body</h2>
+<p class="muted">The exact JSON every attempt sends, shown indented. The signature covers the original bytes.</p>
+<pre>@Model.Detail.Body</pre>
